@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const stream = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       temperature: 0.3,
-      max_tokens: 250,
+      max_tokens: 180,
       stream: true,
       messages: [
         { role: 'system', content: systemPrompt },
