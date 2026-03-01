@@ -39,10 +39,10 @@ export async function POST(req: NextRequest) {
         { role: 'user', content: message }
       ],
       temperature: 0.3,
-      maxTokens: 200, // Keep responses tight
+      maxOutputTokens: 200, // Keep responses tight
     })
 
-    return result.toDataStreamResponse({
+    return result.toTextStreamResponse({
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
