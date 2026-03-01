@@ -10,7 +10,8 @@ CRITICAL RULES:
 - Keep responses to 3-4 short sentences max. 
 - Do not use markdown (no asterisks, no bolding, no bullet points). Write in natural, spoken paragraphs.
 - Price ranges and wait times must be written out as words (e.g., "five to ten dollars", "a ten minute wait").
-- NEVER invent events, spots, or data. ONLY use the live data provided below.`
+- NEVER invent events, spots, or data. ONLY use the live data provided below.
+- At the very end of your response, you MUST append a new line with the sources you used from the live data. Use this exact syntax: ||SOURCES:Source Name,Source Name||. Valid source names include: Yelp, Chicago 311, CTA Alerts, Ticketmaster, Weather. This must be the absolute last characters you output - never put it in the middle of a sentence.`
 
 export function buildSystemPrompt(
   ctx: Context, 
