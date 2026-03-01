@@ -1,65 +1,98 @@
-import Image from "next/image";
+"use client"
+
+import { useState } from "react"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
 export default function Home() {
+  const [activeMainTab, setActiveMainTab] = useState("trending")
+  const [activeSubTab, setActiveSubTab] = useState("rising")
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="min-h-screen bg-zinc-50 dark:bg-black">
+      <div className="container mx-auto py-8">
+        <h1 className="text-3xl font-bold mb-8 text-center">Loop Pulse</h1>
+        
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full max-w-4xl mx-auto">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="trending">Trending</TabsTrigger>
+            <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="food">Food</TabsTrigger>
+            <TabsTrigger value="transit">Transit</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="trending" className="mt-6">
+            <div className="bg-white dark:bg-black rounded-lg border p-6">
+              <h2 className="text-2xl font-semibold mb-4">Trending</h2>
+              
+              <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+                <TabsList variant="line" className="w-full">
+                  <TabsTrigger value="rising">Rising</TabsTrigger>
+                  <TabsTrigger value="discover">Discover</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="rising" className="mt-4">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Rising Content</h3>
+                    <p className="text-muted-foreground">
+                      Discover what's rising in Chicago's culture scene right now.
+                    </p>
+                    <div className="grid gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <h4 className="font-medium">Local Art Exhibits</h4>
+                        <p className="text-sm text-muted-foreground">Explore current gallery shows</p>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <h4 className="font-medium">Music Venues</h4>
+                        <p className="text-sm text-muted-foreground">Popular spots for live performances</p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="discover" className="mt-4">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Discover New</h3>
+                    <p className="text-muted-foreground">
+                      Find hidden gems and off-the-beaten-path cultural experiences.
+                    </p>
+                    <div className="grid gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <h4 className="font-medium">Underground Theaters</h4>
+                        <p className="text-sm text-muted-foreground">Intimate performance spaces</p>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <h4 className="font-medium">Street Art Tours</h4>
+                        <p className="text-sm text-muted-foreground">Murals and public installations</p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="events" className="mt-6">
+            <div className="bg-white dark:bg-black rounded-lg border p-6">
+              <h2 className="text-2xl font-semibold mb-4">Events</h2>
+              <p className="text-muted-foreground">Upcoming events in Chicago</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="food" className="mt-6">
+            <div className="bg-white dark:bg-black rounded-lg border p-6">
+              <h2 className="text-2xl font-semibold mb-4">Food</h2>
+              <p className="text-muted-foreground">Chicago's food scene</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="transit" className="mt-6">
+            <div className="bg-white dark:bg-black rounded-lg border p-6">
+              <h2 className="text-2xl font-semibold mb-4">Transit</h2>
+              <p className="text-muted-foreground">CTA and transit information</p>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
-  );
+  )
 }
