@@ -27,12 +27,21 @@ export function buildSystemPrompt(
   contextString: string
 ): string {
   
-  const persona = profile?.personas?.[0] || 'local';
+  const personas = profile?.personas || ['local'];
   let personalizationRules = "";
 
-  if (persona === 'student') {
-    personalizationRules = `You are talking to a Chicago university student. Prioritize budget-friendly spots. Mention walking times or CTA routes. Suggest places good for studying or late-night food.`;
-  } else if (persona === 'commuter') {
+  // Handle different persona combinations
+  if (personas.includes('visitor')) {
+    personalizationRules = `You are talking to a Chicago visitor. Focus on tourist-friendly recommendations, clear directions, and iconic Chicago experiences. Mention safety tips and transit options for tourists.`;
+  } else if (personas.includes('student')) {
+    if (personas.includes('commuter')) {
+      personalizationRules = `You are talking to a university student who commutes. Prioritize budget-friendly spots, CTA/Metra connections near campus, and places with good study environments. Consider both student life and commute logistics.`;
+    } else if (personas.includes('local')) {
+      personalizationRules = `You are talking to a university student who's also a Chicago local. Recommend student-friendly spots that locals love, hidden gems near campus, and budget options that aren't tourist traps.`;
+    } else {
+      personalizationRules = `You are talking to a Chicago university student. Prioritize budget-friendly spots. Mention walking times or CTA routes. Suggest places good for studying or late-night food.`;
+    }
+  } else if (personas.includes('commuter')) {
     personalizationRules = `You are talking to a commuter. Prioritize CTA delays, Metra stations (Ogilvie/Union), and fast grab-and-go options on their route.`;
   } else {
     personalizationRules = `You are talking to a Chicago local. Skip tourist traps. Recommend hidden gems and neighborhood spots.`;
@@ -44,6 +53,7 @@ ${personalizationRules}
 
 USER PROFILE:
 Name: ${profile?.name ?? 'User'}
+Personas: ${(personas ?? []).join(', ')}
 Current Zone: ${profile?.currentZone ?? 'The Loop'}
 Interests: ${(profile?.interests ?? []).join(', ')}
 
