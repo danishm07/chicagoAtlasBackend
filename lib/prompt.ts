@@ -1,6 +1,6 @@
-import { Context, Profile } from './context.js'
-import { Intent } from './intent.js'
-import { getIntentInstructions } from './intent.js'
+import { Context, Profile } from './context'
+import { Intent } from './intent'
+import { getIntentInstructions } from './intent'
 
 const SYSTEM_INSTRUCTIONS = `You are Pulse AI — real-time city intelligence 
 for Chicago's Loop. Talk like a local, not a chatbot.

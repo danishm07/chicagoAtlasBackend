@@ -1,5 +1,5 @@
-import { Context } from './context.js'
-import { fetchPerplexity } from './fetchers.js'
+import { Context } from './context'
+import { fetchPerplexity } from './fetchers'
 
 export type Intent = 
   | 'food'
@@ -149,9 +149,9 @@ mentioned earlier in this conversation.
       if (destination) {
         // Geocode destination and generate corridor
         const { geocodeDestination } = 
-          await import('./fetchers.js')
+          await import('./fetchers')
         const { generateCorridor } = 
-          await import('./utils.js')
+          await import('./utils')
 
         const geoResult = await geocodeDestination(destination)
         if (geoResult) {

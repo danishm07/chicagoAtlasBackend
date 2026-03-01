@@ -13,7 +13,7 @@ import {
   fetchAir,
   fetchTransit,
   fetchEventbrite
-} from './fetchers.js'
+} from './fetchers'
 
 export interface Context {
   weather: WeatherData
