@@ -51,6 +51,7 @@ interface Context {
   weather: WeatherData
   safety: SafetyData
   events: EventData[]
+  eventbrite: any[]
   spots: SpotData[]
   air: AirData
   transit: TransitData
@@ -376,6 +377,7 @@ async function getContext(profile: Profile): Promise<Context> {
   const ctx: Context = {
     weather, safety, air, transit,
     events: events,
+    eventbrite: [],
     spots: filteredSpots,
     timestamp: new Date().toLocaleString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric',
@@ -497,7 +499,7 @@ function detectIntent(
   return 'general'
 }
 
-function buildFocusedContext(ctx: Context, intent: Intent): string {
+async function buildFocusedContext(ctx: Context, intent: Intent, message: string = ''): Promise<string> {
   const { weather, safety, events, spots, air, transit, timestamp } = ctx
 
   // Always include header and weather
@@ -655,7 +657,7 @@ async function chat(
   
   const intent = detectIntent(message, history)
   console.log(`[Intent: ${intent}]`)
-  const contextString = buildFocusedContext(ctx, intent)
+  const contextString = await buildFocusedContext(ctx, intent, message)
 
   console.log('[Sending to Groq...]\n')
   process.stdout.write('Pulse AI: ')
@@ -730,7 +732,7 @@ const TESTS = [
 async function main() {
   console.log('=== LOOP PULSE — API STATUS ===')
   const keys = ['GROQ_API_KEY', 'TICKETMASTER_API_KEY', 'YELP_API_KEY',
-                'AIRNOW_API_KEY', 'CTA_API_KEY']
+                'AIRNOW_API_KEY', 'CTA_API_KEY', 'PERPLEXITY_API_KEY', 'EVENTBRITE_API_KEY']
   keys.forEach(k => {
     console.log(`${k.padEnd(24)} ${process.env[k] ? '✓ set' : '✗ MISSING'}`)
   })

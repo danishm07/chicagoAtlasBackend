@@ -5,18 +5,21 @@ import {
   SpotData, 
   AirData, 
   TransitData,
+  EventbriteData,
   fetchWeather,
   fetchSafety,
   fetchEvents,
   fetchSpots,
   fetchAir,
-  fetchTransit
-} from './fetchers'
+  fetchTransit,
+  fetchEventbrite
+} from './fetchers.js'
 
 export interface Context {
   weather: WeatherData
   safety: SafetyData
   events: EventData[]
+  eventbrite: EventbriteData[]
   spots: SpotData[]
   air: AirData
   transit: TransitData
@@ -50,8 +53,8 @@ export async function getContext(profile: Profile): Promise<Context> {
   }
 
   console.log('[Cache] fetching fresh data...')
-  const [weather, safety, events, spots, air, transit] = await Promise.all([
-    fetchWeather(), fetchSafety(), fetchEvents(),
+  const [weather, safety, events, eventbrite, spots, air, transit] = await Promise.all([
+    fetchWeather(), fetchSafety(), fetchEvents(), fetchEventbrite(),
     fetchSpots(), fetchAir(), fetchTransit()
   ])
 
@@ -65,6 +68,7 @@ export async function getContext(profile: Profile): Promise<Context> {
   const ctx: Context = {
     weather, safety, air, transit,
     events: events,
+    eventbrite: eventbrite,
     spots: filteredSpots,
     timestamp: new Date().toLocaleString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric',
@@ -77,7 +81,7 @@ export async function getContext(profile: Profile): Promise<Context> {
 }
 
 export function buildContextString(ctx: Context): string {
-  const { weather, safety, events, spots, air, transit, timestamp } = ctx
+  const { weather, safety, events, eventbrite, spots, air, transit, timestamp } = ctx
 
   // Only list medium/high incidents — not noise complaints
   const notableIncidents = safety.incidents.filter(i => i.severity !== 'low')
@@ -92,10 +96,15 @@ ${notableIncidents.length > 0
   : '  - No notable incidents'}
 Recommendation: ${safety.recommendation}
 
-EVENTS TODAY (${events.length}):
+TICKETMASTER EVENTS (${events.length}):
 ${events.length > 0
   ? events.map(e => `  - ${e.name} @ ${e.venue} · ${e.time} · ${e.price} · ${e.distance}`).join('\n')
   : '  - No ticketed events found today'}
+
+FREE EVENTS (${eventbrite.length}):
+${eventbrite.length > 0
+  ? eventbrite.map(e => `  - ${e.name} @ ${e.venue} · ${e.time} · ${e.distance}`).join('\n')
+  : '  - No free events found today'}
 
 OPEN SPOTS NEARBY (${spots.length}):
 ${spots.map(s => `  - ${s.name} · ${s.category} · ${s.price} · wait: ${s.waitEstimate} · ${s.distance} · ★${s.rating}`).join('\n')}

@@ -20,6 +20,7 @@ export interface EventData {
   time: string
   price: string
   distance: string
+  rawTime?: string
 }
 
 export interface SpotData {
@@ -40,6 +41,22 @@ export interface AirData {
 export interface TransitData {
   alerts: Array<{ route: string; headline: string }>
   status: string
+}
+
+export interface GeoResult {
+  lat: number
+  lng: number
+  neighborhood: string
+  fullAddress: string
+}
+
+export interface EventbriteData {
+  name: string
+  venue: string
+  time: string
+  price: string
+  distance: string
+  category: string
 }
 
 // ─── FETCHERS ────────────────────────────────────────────
@@ -165,6 +182,7 @@ export async function fetchEvents(): Promise<EventData[]> {
       const timeStr = e.dates?.start?.localTime
         ? e.dates.start.localTime.slice(0, 5)
         : null
+      const rawTime = e.dates?.start?.dateTime
       let timeLabel = 'Tonight'
       if (timeStr) {
         const [h, m] = timeStr.split(':').map(Number)
@@ -176,12 +194,20 @@ export async function fetchEvents(): Promise<EventData[]> {
         venue: venue?.name ?? 'Chicago venue',
         time: timeLabel,
         price: minPrice ? `From $${Math.round(minPrice)}` : 'See site',
-        distance: venue?.distance ? `${Number(venue.distance).toFixed(1)} mi` : 'Nearby'
+        distance: venue?.distance ? `${Number(venue.distance).toFixed(1)} mi` : 'Nearby',
+        rawTime
       }
     })
 
-    console.log(`[EVENTS] ✓ real data — ${processed.length} events`)
-    return processed
+    // Filter out stale events (older than 30 minutes ago)
+    const currentTime = new Date()
+    const upcoming = processed.filter((e: any) => {
+      if (!e.rawTime) return true
+      return new Date(e.rawTime).getTime() > currentTime.getTime() - 30 * 60 * 1000
+    })
+
+    console.log(`[EVENTS] ✓ real data — ${upcoming.length} upcoming events (filtered from ${processed.length} total)`)
+    return upcoming
   } catch (e) {
     console.log(`[EVENTS] ✗ mock — ${e}`)
     // Minimal mock — no DePaul game injected
@@ -315,5 +341,186 @@ export async function fetchTransit(): Promise<TransitData> {
   } catch (e) {
     console.log(`[CTA] ✗ mock — ${e}`)
     return { alerts: [], status: 'All lines running normally' }
+  }
+}
+
+export async function fetchPerplexity(
+  query: string,
+  context: {
+    neighborhood: string
+    time: string
+    type?: string
+    corridor?: string[]
+  }
+): Promise<string> {
+  const key = process.env.PERPLEXITY_API_KEY
+  if (!key) {
+    console.log('[PERPLEXITY] ✗ no key')
+    return ''
+  }
+
+  try {
+    // Build the prompt based on whether this is 
+    // a corridor query or a neighborhood query
+    const locationContext = context.corridor?.length
+      ? `along the route through ${context.corridor.join(', ')} in Chicago` 
+      : `near ${context.neighborhood} in Chicago` 
+
+    const typeContext = context.type
+      ? `specifically ${context.type}` 
+      : 'restaurants, cafes, bars, or interesting spots'
+
+    const prompt =
+      `Find 3 lesser-known, locally-loved ${typeContext} ` +
+      `${locationContext}. ` +
+      `Current time: ${context.time}. ` +
+      `Rules: currently open only, no national chains, ` +
+      `not the obvious tourist spots, places a Chicago ` +
+      `local would actually recommend. ` +
+      `For each place include: name, the cross street ` +
+      `or neighborhood, one sentence on what makes it ` +
+      `worth visiting, and rough price range. ` +
+      `Be specific — real place names only.` 
+
+    const res = await fetch(
+      'https://api.perplexity.ai/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'sonar',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 400,
+          temperature: 0.2
+        })
+      }
+    )
+
+    if (!res.ok) throw new Error(`status ${res.status}`)
+    const d = await res.json()
+    const result = d.choices?.[0]?.message?.content ?? ''
+    console.log('[PERPLEXITY] ✓ discovery data')
+    return result
+  } catch(e: any) {
+    console.log(`[PERPLEXITY] ✗ ${e.message}`)
+    return ''
+  }
+}
+
+export async function geocodeDestination(
+  destination: string
+): Promise<GeoResult | null> {
+  const key = process.env.AZURE_MAPS_KEY
+  if (!key) return null
+
+  try {
+    const query = encodeURIComponent(
+      `${destination}, Chicago, IL` 
+    )
+    const res = await fetch(
+      `https://atlas.microsoft.com/search/address/json` +
+      `?api-version=1.0&query=${query}` +
+      `&subscription-key=${key}` +
+      `&countrySet=US&limit=1` 
+    )
+    if (!res.ok) throw new Error(`status ${res.status}`)
+    const d = await res.json()
+    const result = d.results?.[0]
+    if (!result) return null
+
+    const pos = result.position
+    const addr = result.address
+
+    // Extract neighborhood — try municipality subdivision
+    // then neighborhood, then freeform address
+    const neighborhood =
+      addr.municipalitySubdivision?.split(',')?.[0] ??
+      addr.neighbourhood ??
+      addr.freeformAddress ??
+      destination
+
+    console.log(`[GEOCODE] ✓ ${destination} → ${neighborhood}`)
+    return {
+      lat: pos.lat,
+      lng: pos.lon,
+      neighborhood,
+      fullAddress: addr.freeformAddress
+    }
+  } catch(e: any) {
+    console.log(`[GEOCODE] ✗ ${e.message}`)
+    return null
+  }
+}
+
+export async function fetchEventbrite(): Promise<EventbriteData[]> {
+  const key = process.env.EVENTBRITE_API_KEY
+  if (!key) {
+    console.log('[EVENTBRITE] ✗ no key')
+    return []
+  }
+
+  try {
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
+    const res = await fetch(
+      `https://www.eventbriteapi.com/v3/events/search/` +
+      `?location.address=Chicago%20Loop` +
+      `&start_date.range_start=${today}T00:00:00Z` +
+      `&start_date.range_end=${tomorrow}T23:59:59Z` +
+      `&expand=venue` +
+      `&sort_by=date` +
+      `&price=free` +
+      `&limit=5`,
+      {
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
+    if (!res.ok) throw new Error(`status ${res.status}`)
+    const d = await res.json()
+    const events = d.events ?? []
+
+    const processed = events.map((e: any) => {
+      const venue = e.venue
+      const startTime = e.start?.local
+      const timeStr = startTime ? new Date(startTime).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }) : 'Time TBD'
+
+      // Calculate rough distance from Loop center
+      const venueLat = venue?.latitude ?? 41.8827
+      const venueLng = venue?.longitude ?? -87.6233
+      const distance = Math.sqrt(
+        Math.pow(venueLat - 41.8827, 2) + 
+        Math.pow(venueLng - -87.6233, 2)
+      ) * 69 // Rough miles conversion
+
+      return {
+        name: e.name?.text ?? 'Event',
+        venue: venue?.name ?? 'Chicago venue',
+        time: timeStr,
+        price: e.is_free ? 'Free' : e.ticket_availability?.minimum_ticket_price?.major_value 
+          ? `$${e.ticket_availability.minimum_ticket_price.major_value}` 
+          : 'See site',
+        distance: `${distance.toFixed(1)} mi`,
+        category: e.category?.name ?? 'Event'
+      }
+    })
+
+    console.log(`[EVENTBRITE] ✓ real data — ${processed.length} free events`)
+    return processed
+  } catch(e: any) {
+    console.log(`[EVENTBRITE] ✗ ${e.message}`)
+    return []
   }
 }

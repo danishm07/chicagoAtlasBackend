@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     
     const ctx = await getContext(profile)
     const intent = detectIntent(message, history ?? [])
-    const contextString = buildFocusedContext(ctx, intent)
+    const contextString = await buildFocusedContext(ctx, intent, message)
     const systemPrompt = buildSystemPrompt(
       ctx, profile, intent, contextString
     )
